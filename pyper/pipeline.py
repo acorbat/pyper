@@ -17,61 +17,28 @@ class Pipe(object):
     def __init__(self, attrs=['label', 'centroid', 'coords', 'area'], funcs=None):
 
         self.funcs = funcs  # Concatenated list of functions to be run
+        self.results = {}  # Dictionary to save results of each function
 
-        # Variables where results are saved
-        self.df = pd.DataFrame()
-        self.foci_labeled = None
-        self.cell_segm = None
-        self.mito_segm = None
+    def add_function(self, func):
+        """Adds a function or list of function to the pipeline list."""
+        self.funcs.extend(func)
 
+    def make_connection(self, provider_func_id, subscriber_func_id,
+                        provider_func_result=0, subscriber_func_parameter=0):
+        """Connects the result of a provider function to the input of another subscriber function.
 
-    def process(self, p=None):
-        """Enter foci stack and mito stack to be processed. Returns a DataFrame with the results"""
-
-        # Organize stack accordingly for processing
-
-        # Segment the stacks inserted
-        if self.foci_labeled is None:
-            self.segment()
-
-        # Extract attributes through label_to_df
-        if self.attrs is not None:
-            self.df = fa.label_to_df(self.foci_labeled, cols=self.attrs,
-                                     intensity_image=self.mito_segm)
-
-        # Perform extra functions
-        for func in self.funcs:
-            this_df = func(self.df, self.foci_labeled, self.cell_segm, self.mito_segm)
-            self.df = self.df.merge(this_df)
-
-        return self.df
-
-    def add_segmenter(self, segmenter):
-        self.segmenter = segmenter
-
-    def segment(self, foci_stack, mito_stack):
-        self.segmenter.vars['foci_stack'] = foci_stack
-        self.segmenter.vars['mito_stack'] = mito_stack
-        self.foci_labeled, self.cell_segm, self.mito_segm = self.segmenter.execute()
-
-    def renew_stack(self, foci_stack, mito_stack):
-        self.df = pd.DataFrame()
-        self.foci_labeled = None
-        self.cell_segm = None
-        self.mito_segm = None
-        self.segmenter['foci_stack'] = foci_stack.copy()
-        self.segmenter['mito_stack'] = mito_stack.copy()
-
-    def add_attr(self, attrs):
-        if not isinstance(attrs, list):
-            attrs = list(attrs)
-        self.attrs.extend(attrs)
-
-
-    def add_func(self, funcs):
-        if not isinstance(funcs, list):
-            funcs = list(funcs)
-        self.funcs.extend(funcs)
+        Parameters
+        ----------
+        provider_func_id : int
+            index of the function providing the parameter
+        subscriber_func_id : int
+            index of the function with the new parameter
+        provider_func_result : int, default=0
+            index of the result to pass on to the subscribing function
+        subscriber_func_parameter : int, default=0
+            index of the parameter from the subscribing function"""
+        self.funcs[subscriber_func_id].vars[subscriber_func_parameter] = \
+            self.results[provider_func_id][provider_func_result]
 
 
 class AdaptedFunction(object):
