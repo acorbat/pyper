@@ -12,6 +12,7 @@ class Pipe(object):
 
         self.funcs = []
         self.add_function(funcs)
+        self.verbose = False
 
     def add_function(self, func):
         """Adds a function or list of function to the pipeline list."""
@@ -60,8 +61,11 @@ class Pipe(object):
             for parameter in function.vars:
                 if isinstance(function.vars[parameter], str) and "_get_result" in function.vars[parameter]:
                     function.vars[parameter] = eval(function.vars[parameter])
-            print('Executing: ')
-            print(function)
+
+            if self.verbose:
+                print('Executing: ')
+                print(function)
+            
             function.execute()
 
     def __add__(self, b):
