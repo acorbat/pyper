@@ -1,12 +1,6 @@
 import json
-import multiprocessing
 import inspect
 from collections import OrderedDict
-
-import pandas as pd
-
-from foci_finder import foci_analysis as fa
-from foci_finder import docking as dk
 
 
 class Pipe(object):
