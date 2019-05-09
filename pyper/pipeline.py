@@ -10,7 +10,7 @@ class Pipe(object):
 
     def __init__(self, funcs=None):
 
-        self.funcs = []
+        self.funcs = OrderedDict()
         self.add_function(funcs)
         self.verbose = False
 
@@ -22,7 +22,13 @@ class Pipe(object):
             func = [func]
         func = [this_func if isinstance(this_func, AdaptedFunction) else AdaptedFunction(this_func)
                 for this_func in func]
-        self.funcs.extend(func)
+        for this_func in func:
+            self.funcs.update({len(self.funcs): this_func})
+
+    def change_func_id(self, new_name, old_name):
+        if new_name in self.funcs.keys():
+            raise ValueError('Function id already taken')
+        self.funcs = OrderedDict([(new_name if k == old_name else k, v) for k, v in self.funcs.items()])
 
     def concatenate_pipeline(self, pipeline):
         """It would be interesting to add this functionality and correct the __add__ magic function"""
@@ -37,21 +43,21 @@ class Pipe(object):
 
         Parameters
         ----------
-        provider_func_id : int
+        provider_func_id : id
             index of the function providing the parameter
-        subscriber_func_id : int
+        subscriber_func_id : id
             index of the function with the new parameter
         provider_func_result : int, default=0
             index of the result to pass on to the subscribing function
         subscriber_func_parameter : int, default=0
             index of the parameter from the subscribing function"""
 
-        if subscriber_func_id <= provider_func_id:
+        if list(self.funcs).index(subscriber_func_id) <= list(self.funcs).index(provider_func_id):
             raise ValueError('Provider function must happen before subscriber function')
 
-        subcriber_params = list(self.funcs[subscriber_func_id].vars)
+        subscriber_params = list(self.funcs[subscriber_func_id].vars)
 
-        subscriber_func_parameter = subcriber_params[subscriber_func_parameter]
+        subscriber_func_parameter = subscriber_params[subscriber_func_parameter]
 
         self.funcs[subscriber_func_id].vars[subscriber_func_parameter] = \
             "self._get_result(%s, %s)" % (provider_func_id, provider_func_result)
@@ -65,7 +71,7 @@ class Pipe(object):
             if self.verbose:
                 print('Executing: ')
                 print(function)
-            
+
             function.execute()
 
     def __add__(self, b):
@@ -73,9 +79,9 @@ class Pipe(object):
 
     def __repr__(self):
         to_print = 'This pipeline has the following functions:\n\n'
-        for n, function in enumerate(self.funcs):
-            to_print += 'Function id: ' + str(n) + '\n'
-            to_print += str(function) + '\n\n'
+        for function_key in self.funcs:
+            to_print += 'Function id: ' + str(function_key) + '\n'
+            to_print += str(self.funcs[function_key]) + '\n\n'
 
         return to_print
 
