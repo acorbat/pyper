@@ -74,6 +74,19 @@ class Pipe(object):
 
             function.execute()
 
+    def to_dict(self):
+        all_functions_dict = {}
+        for function_key in self.funcs:
+            all_functions_dict[function_key] = self.funcs[function_key].to_dict()
+        return all_functions_dict
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
+
+    def dump(self, path):
+        with open(str(path), "w") as write_file:
+            json.dump(self.to_dict(), write_file)
+
     def __add__(self, b):
         self.add_function(b)
 
