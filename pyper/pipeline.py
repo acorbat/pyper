@@ -63,7 +63,8 @@ class Pipe(object):
             "self._get_result(%s, %s)" % (provider_func_id, provider_func_result)
 
     def run(self):
-        for function in self.funcs:
+        for function_key in self.funcs:
+            function = self.funcs[function_key]
             for parameter in function.vars:
                 if isinstance(function.vars[parameter], str) and "_get_result" in function.vars[parameter]:
                     function.vars[parameter] = eval(function.vars[parameter])
