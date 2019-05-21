@@ -23,11 +23,26 @@ class Pipe(object):
         func = [this_func if isinstance(this_func, AdaptedFunction) else AdaptedFunction(this_func)
                 for this_func in func]
         for this_func in func:
-            self.funcs.update({len(self.funcs): this_func})
+            self._add_function(this_func.func_id, this_func)
+
+    def _add_function(self, func_id, adap_func):
+
+        ids = list(self.funcs.keys())
+        if func_id in ids:
+            n = 0
+            new_func_id = '_'.join([func_id, str(n)])
+            while new_func_id in ids:
+                n += 1
+                new_func_id = '_'.join([func_id, str(n)])
+            func_id = new_func_id
+
+        self.funcs.update({func_id: adap_func})
 
     def change_func_id(self, new_name, old_name):
         if new_name in self.funcs.keys():
-            raise ValueError('Function id already taken')
+            raise ValueError('New function id already taken')
+        if old_name not in self.funcs.keys():
+            raise ValueError('Old function id does not exist')
         self.funcs = OrderedDict([(new_name if k == old_name else k, v) for k, v in self.funcs.items()])
 
     def concatenate_pipeline(self, pipeline):
@@ -99,15 +114,30 @@ class Pipe(object):
 
         return to_print
 
+    def __getitem__(self, item):
+        return self.funcs[item]
+
+    def __rshift__(self, other):
+        if not isinstance(other, AdaptedFunction):
+            raise TypeError('You can only add Adapted functions with this method. Use make_connection method for more '
+                            'specific cases')
+
+        last_function_key = list(self.funcs.keys())[-1]
+        self.add_function(other)
+        new_function_key = list(self.funcs.keys())[-1]
+
+        self.make_connection(last_function_key, new_function_key)
+
 
 class AdaptedFunction(object):
     """Adapted Functions should be able to take the same parameters between different instances so as to be able to list
      them and run them one after the other. Extra parameters should be saved some way. There should be a way to print
      them and characterize them in order to dump the analysis made in Pipe."""
 
-    def __init__(self, func):
+    def __init__(self, func, func_id=None):
         self.func = func
         self.name = func.__name__
+        self.func_id = self.name if func_id is None else func_id
         self.vars = self._get_func_parameters(func)
         self.result = {'result': [None], 'executed': False}
 
@@ -142,3 +172,9 @@ class AdaptedFunction(object):
     def dump(self, path):
         with open(str(path), "w") as write_file:
             json.dump(self.to_dict(), write_file)
+
+    def __getitem__(self, item):
+        return self.vars[item]
+
+    def __setitem__(self, key, value):
+        self.vars[key] = value
