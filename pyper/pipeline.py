@@ -121,9 +121,8 @@ class AdaptedFunction(object):
 
     def execute(self):
         """Executes function with saved parameters."""
-        caller = 'self.func(' + ', '.join([str(value) for key, value in self.vars.items()]) + ')'
 
-        result = eval(caller)
+        result = self.func(**self.vars)
         self.result['result'] = result if isinstance(result, (list, tuple)) else [result]
         self.result['executed'] = True
 
